@@ -25732,3 +25732,79 @@ Get movie duration in AV_TIME_BASE units.
 @end table
 
 @c man end MULTIMEDIA SOURCES
+
+@section xcam
+Image processing supported through libXCam.
+
+To enable compilation of @var{xcam} filter you need to configure FFmpeg with
+@code{--enable-libxcam}.
+
+libXCam supports automotive surround view stitching, 360 video stitching,
+digital video stabilization, noise reduction and so on. For more information
+about libxcam see @url{https://github.com/intel/libxcam}.
+
+@subsection Options
+
+@table @option
+
+@item inputs
+The number of inputs. Default is @code{1}. 3dnr, waveletnr, fisheye, defog
+and dvs handlers support one input, stitch and stitchcl handlers support
+dynamic inputs.
+
+@item w
+Output video width. Default is @code{0}.
+If the value is 0, the corresponding input width is used for the output.
+
+@item h
+Output video height. Default is @code{0}.
+If the value is 0, the corresponding input height is used for the output.
+
+@item fmt
+Pixel format. Default is @code{auto}.
+
+@table @samp
+@item auto
+Negotiate pixel format automatically, selects the input pixel format as the
+processing format.
+@item nv12
+NV12 format. All handlers support NV12 format.
+@item yuv420
+YUV420 format. Currently, only @b{soft} stitching supports YUV420 format.
+@end table
+
+@item name
+Handler name. Default is @code{stitch}.
+
+@table @samp
+@item 3dnr
+3D denoising
+@item waveletnr
+Wavelet denoising
+@item fisheye
+Fisheye calibration
+@item defog
+Fog removal
+@item dvs
+Digital video stabilizer
+@item stitch
+Soft/GLES/Vulkan stitching, supports automotive surround view stitching and
+360 video stitching.
+@item stitchcl
+OpenCL stitching, supports automotive surround view stitching and 360 video
+stitching.
+@end table
+
+@item allocoutbuf
+Whether or not to allocate output buffer. Default is @code{1}.
+
+@item params
+Private parameters for each handler. Currently, only @b{stitch} and
+@b{stitchcl} handlers have private parameters.
+
+@end table
+
+@subsection Examples
+
+For more detailed examples see @url{https://github.com/intel/libxcam/wiki/Tests#1-ffmpeg-xcam}.
+

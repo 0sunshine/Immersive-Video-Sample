@@ -187,6 +187,8 @@ extern AVInputFormat  ff_hcom_demuxer;
 extern AVOutputFormat ff_hds_muxer;
 extern AVInputFormat  ff_hevc_demuxer;
 extern AVOutputFormat ff_hevc_muxer;
+extern AVOutputFormat ff_omaf_packing_muxer;
+extern AVInputFormat  ff_tile_dash_demuxer;
 extern AVInputFormat  ff_hls_demuxer;
 extern AVOutputFormat ff_hls_muxer;
 extern AVInputFormat  ff_hnm_demuxer;

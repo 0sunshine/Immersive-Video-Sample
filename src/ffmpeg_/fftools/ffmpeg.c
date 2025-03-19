@@ -1314,6 +1314,7 @@ static void do_video_out(OutputFile *of,
             if (ost->logfile && enc->stats_out) {
                 fprintf(ost->logfile, "%s", enc->stats_out);
             }
+            break;
         }
         ost->sync_opts++;
         /*
@@ -1508,6 +1509,7 @@ static int reap_filters(int flush)
             }
 
             av_frame_unref(filtered_frame);
+            break;
         }
     }
 

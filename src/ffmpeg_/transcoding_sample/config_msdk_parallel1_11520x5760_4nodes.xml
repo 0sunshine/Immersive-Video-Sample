@@ -1,0 +1,32 @@
+<?txt version="1.0" encoding="UTF-8"?>
+<sessionList>
+
+    <session name="NativSession1">
+        <option encoder="msdk" />
+        <option isNative="true" />
+        <option gpuNode="0" />
+        <option region="0,0,5760,2880">
+        </option>
+    </session>
+    <session name="NativSession2">
+        <option encoder="msdk" />
+        <option isNative="true" />
+        <option gpuNode="1" />
+        <option region="5760,0,5760,2880">
+        </option>
+    </session>
+    <session name="NativSession3">
+        <option encoder="msdk" />
+        <option isNative="true" />
+        <option gpuNode="2" />
+        <option region="0,2880,5760,2880">
+        </option>
+    </session>
+    <session name="NativSession4">
+        <option encoder="msdk" />
+        <option isNative="true" />
+        <option gpuNode="3" />
+        <option region="5760,2880,5760,2880">
+        </option>
+    </session>
+</sessionList>

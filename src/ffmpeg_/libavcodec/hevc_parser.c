@@ -381,7 +381,7 @@ static void hevc_parser_close(AVCodecParserContext *s)
 }
 
 AVCodecParser ff_hevc_parser = {
-    .codec_ids      = { AV_CODEC_ID_HEVC },
+    .codec_ids      = { AV_CODEC_ID_HEVC , AV_CODEC_ID_HEVCBYPASSVIDEO},
     .priv_data_size = sizeof(HEVCParserContext),
     .parser_parse   = hevc_parse,
     .parser_close   = hevc_parser_close,

@@ -3355,15 +3355,22 @@ static void event_loop(VideoState *cur_stream)
                 seek_chapter(cur_stream, -1);
                 break;
             case SDLK_LEFT:
-                incr = seek_interval ? -seek_interval : -10.0;
-                goto do_seek;
+                {
+                    incr = seek_interval ? -seek_interval : -10.0;
+                    goto do_seek;
+                }
             case SDLK_RIGHT:
-                incr = seek_interval ? seek_interval : 10.0;
-                goto do_seek;
+                {
+                    incr = seek_interval ? seek_interval : 10.0;
+                    goto do_seek;
+                }
             case SDLK_UP:
-                incr = 60.0;
-                goto do_seek;
+                {
+                    incr = 60.0;
+                    goto do_seek;
+                }
             case SDLK_DOWN:
+                {
                 incr = -60.0;
             do_seek:
                     if (seek_by_bytes) {
@@ -3390,6 +3397,7 @@ static void event_loop(VideoState *cur_stream)
                         stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), (int64_t)(incr * AV_TIME_BASE), 0);
                     }
                 break;
+                }
             default:
                 break;
             }
