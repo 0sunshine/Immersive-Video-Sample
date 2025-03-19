@@ -1,0 +1,61 @@
+<?txt version="1.0" encoding="UTF-8"?>
+<PackingCfg>
+    <OptionsList>
+        <option packing_proj_type="ERP" />
+        <option cubemap_face_file="0" />
+        <option viewport_w="1024" />
+        <option viewport_h="1024" />
+        <option viewport_yaw="90" />
+        <option viewport_pitch="0" />
+        <option viewport_fov_hor="80" />
+        <option viewport_fov_ver="80" />
+        <option window_size="5" />
+        <option extra_window_size="15" />
+        <option split_tile="1" />
+        <option seg_duration="5" />
+        <option is_live="1" />
+        <option base_url="http://xx.xx.xx.xx:8080/packing_sample_test/" />
+        <option out_name="Test" />
+        <option need_buffered_frames="15" />
+        <option packing_plugin_path="/usr/local/lib" />
+        <option packing_plugin_name="HighResPlusFullLowResPacking" />
+        <option video_plugin_path="/usr/local/lib" />
+        <option video_plugin_name="HevcVideoStreamProcess" />
+        <option audio_plugin_path="0" />
+        <option audio_plugin_name="0" />
+        <option has_extractor="1" />
+        <option extractors_per_thread="4" />
+        <option fixed_extractors_res="0" />
+        <option cmaf_enabled="1" />
+        <option chunk_dur="500" />
+        <option seg_writer_path="/usr/local/lib" />
+        <option seg_writer_name="CMAFSegmentWriter" />
+        <option mpd_writer_path="/usr/local/lib" />
+        <option mpd_writer_name="MPDWriter" />
+        <option target_latency="3500" />
+        <option min_latency="2000" />
+        <option max_latency="10000" />
+        <option need_external_log="1" />
+        <option min_log_level="0" />
+        <option packing_frames_cnt="3000000000" />
+        <option input_videos_num="2" />
+    </OptionsList>
+    <Video1>
+        <info file_name="high_res.h265" />
+        <info width="7680" />
+        <info height="3840" />
+        <info bit_rate="60000" />
+        <info frame_rate="30" />
+        <info gop_size="15" />
+        <info frame_size_file="high_res_frame_size.txt" />
+    </Video1>
+    <Video2>
+        <info file_name="low_res.h265" />
+        <info width="1280" />
+        <info height="640" />
+        <info bit_rate="1000" />
+        <info frame_rate="30" />
+        <info gop_size="15" />
+        <info frame_size_file="low_res_frame_size.txt" />
+    </Video2>
+</PackingCfg>
