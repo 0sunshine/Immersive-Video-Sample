@@ -6,7 +6,7 @@ android {
             jniLibs.srcDirs = ['src/main/jniLibs','libs','libs/arm64-v8a']
         }
     }
-    compileSdkVersion 28
+    compileSdkVersion 30
     defaultConfig {
         applicationId "com.vcd.immersive.omafplayer"
         minSdkVersion 25
