@@ -272,18 +272,17 @@ public final class SceneRenderer {
         return true;
     }
 
+    private long lastUpdateTimeStamp = 0;
     private boolean IsUpdate(int framerate) {
-        int sysFreq = SYSTEMFREQ;
-        BigInteger biSysFreq = BigInteger.valueOf(sysFreq);
-        BigInteger biInputFps = BigInteger.valueOf(framerate);
-        BigInteger bigcd = biSysFreq.gcd(biInputFps);
-        int gcd = bigcd.intValue();
-        int unitTotal = sysFreq / gcd;
-        int needRendered = framerate / gcd;
-        int interval = unitTotal / needRendered;
-        int index = drawTimes++ % unitTotal;
-//        Log.i(TAG, "tt gcd is " + gcd + " unit total " + unitTotal + " rendered " + needRendered + " index " + index);
-        return (index % interval == 0 && index < interval * needRendered);
+
+        long currTimeStamp = System.currentTimeMillis();
+        if(currTimeStamp - lastUpdateTimeStamp > (1000/framerate))
+        {
+            lastUpdateTimeStamp = currTimeStamp;
+            return true;
+        }
+
+        return false;
     }
 //    private boolean IsUpdate(int framerate) {
 //        return (drawTimes++ % 2 == 0);
