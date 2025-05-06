@@ -1,4 +1,8 @@
 #!/bin/bash
+
+export http_proxy="http://192.168.104.240:7890"
+export https_proxy="https://192.168.104.240:7890"
+
 mkdir -p ../build/external/android && cd ../build/external/android
 #NDK download
 if [ ! -d "android-ndk-r18b" ];then
@@ -39,7 +43,7 @@ cd build
 cmake .. -DBUILD_SHARED_LIBS=ON -DDEBUG=NO -DCMAKE_TOOLCHAIN_FILE=$NDK_r18b_PATH/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_TOOLCHAIN=aarch64-linux-android-4.9 -DANDROID_PLATFORM=android-21 -DANDROID_STD=c++_shared
 make -j
 sudo make install
-cd ../..
+cd ..
 #curl
 #NDK r14b download
 if [ ! -d "android-ndk-r14b" ];then
