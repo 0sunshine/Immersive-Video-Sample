@@ -39,6 +39,9 @@
 #define ERP_MESH_COLUMNS 64
 #define ERP_MESH_ROWS 32
 
+extern int gPrimaryMonitorWidth;
+extern int gPrimaryMonitorHeight;
+
 VCD_NS_BEGIN
 
 ERPRender::ERPRender()
@@ -71,7 +74,22 @@ RenderStatus ERPRender::Render(uint32_t onScreenTexHandle, uint32_t width, uint3
     m_videoShaderOfOnScreen->Bind();
     m_videoShaderOfOnScreen->SetUniformMatrix4f("uProjMatrix", ProjectionMatrix);
     m_videoShaderOfOnScreen->SetUniformMatrix4f("uViewMatrix", ViewModelMatrix);
-    renderBackend->Viewport(0, 0, width, height);
+
+    // extern int gPrimaryMonitorWidth;
+    // extern int gPrimaryMonitorHeight;
+
+    int expandWidth = gPrimaryMonitorHeight * width / height;
+    int boardWidth = (gPrimaryMonitorWidth - expandWidth) / 2;
+    if (boardWidth > 0)
+    {
+        renderBackend->Viewport(boardWidth, 0, expandWidth, gPrimaryMonitorHeight);
+    }
+    else
+    {
+        renderBackend->Viewport(0, 0, width, height);
+    }
+
+
     uint32_t onScreenVAO = this->m_meshOfOnScreen->GetVAOHandle();//renderBackend->GetOnScreenVAOHandle();
     renderBackend->BindVertexArray(onScreenVAO);
     renderBackend->ActiveTexture(GL_TEXTURE0);

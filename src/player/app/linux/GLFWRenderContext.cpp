@@ -39,6 +39,9 @@
 
 #define SPEED_CNT_THRESHOLD 150
 
+extern int gPrimaryMonitorWidth = 0;
+extern int gPrimaryMonitorHeight = 0;
+
 VCD_NS_BEGIN
 using namespace tinyxml2;
 
@@ -579,7 +582,13 @@ void* GLFWRenderContext::InitContext()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "VR Player", NULL, NULL); //done
+
+    GLFWmonitor *primaryMonitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode *mode = glfwGetVideoMode(primaryMonitor);
+    gPrimaryMonitorWidth = mode->width;
+    gPrimaryMonitorHeight = mode->height;
+
+    m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "VR Player", primaryMonitor, NULL); // done
     if (!m_window)
     {
         LOG(ERROR)<< "failed to open window" << std::endl;
