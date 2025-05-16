@@ -71,6 +71,8 @@ public:
      //!
      RenderStatus CreateVideoDecoder(uint32_t video_id, Codec_Type video_codec, uint64_t startPts);
 
+     RenderStatus CreateAudioDecoder(Codec_Type audio_codec, uint64_t startPts);
+
      //!
      //! \brief  reset the decoder when decoding information changes
      //!
@@ -114,8 +116,8 @@ public:
      DecodeInfo GetDecodeInfo() { return m_decodeInfo; };
 
      ///Audio-relative operations: TBD
-     RenderStatus CreateAudioDecoder(uint32_t audio_id, uint32_t audio_codec){ return RENDER_STATUS_OK; };
-     RenderStatus SendAudioPackets( DashPacket* packets ){ return RENDER_STATUS_OK; };
+     RenderStatus SendAudioPackets(DashPacket *packets, uint32_t cnt);
+
      RenderStatus UpdateAudioFrame( ){ return RENDER_STATUS_OK; };
      bool GetEOS() // when updating frame meeting eos in all video decoders
      {
@@ -161,6 +163,7 @@ public:
 private:
      ///Video-relative operations
      RenderStatus CheckVideoDecoders(vector<DashPacket*> packets, std::map<uint32_t, MediaDecoder*> decoderMap, uint32_t cnt, bool isCatchup);
+     RenderStatus CheckAudioDecoders(DashPacket *packets, uint32_t cnt);
 
      RenderStatus CheckViewIdAvailability(HeadPose *pose);
 
@@ -168,7 +171,7 @@ private:
 private:
     std::map<uint32_t, MediaDecoder*>   m_mapVideoDecoder; //! the map of video decoders
     std::map<uint32_t, MediaDecoder*>   m_mapCatchupVideoDecoder; //! the map of catch-up video decoders
-    std::map<uint32_t, MediaDecoder*>   m_mapAudioDecoder; //! the map of audio decoders
+    MediaDecoder*                       m_audioDecoder;
     FrameHandlerFactory*                m_handlerFactory;  //! the frameHandler factory to create frameHandler for each decoder
     ThreadLock                          m_mapDecoderLock;
     ThreadLock                          m_mapCatchupDecoderLock;

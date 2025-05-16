@@ -468,10 +468,25 @@ void DashMediaSource::ProcessAudioPacket() {
     // LOG(INFO) << "Get packet failed: stream_id:" << vi.streamID << ", ret:" << ret << std::endl;
     return;
   }
+
+  LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------Audio GetPacket: " << dashPktNum << "! " << dashPkt[0].size << std::endl;
+
+  if (NULL != m_DecoderManager)
+  {
+    RenderStatus ret = m_DecoderManager->SendAudioPackets(&(dashPkt[0]), dashPktNum);
+    // needHeaders = false;
+    if (RENDER_STATUS_OK != ret)
+    {
+      LOG(INFO) << "m_DecoderManager::SendAudioPacket: stream_id:" << ai.streamID << " segment id" << dashPkt[0].segID
+                << std::endl;
+    }
+  }
   // delete audio data
-  for (int i = 0; i < dashPktNum; i++) {
+  for (int i = 0; i < dashPktNum; i++)
+  {
     SAFE_FREE(dashPkt[i].buf);
-    if (dashPkt[i].rwpk) SAFE_DELETE_ARRAY(dashPkt[i].rwpk->rectRegionPacking);
+    if (dashPkt[i].rwpk)
+      SAFE_DELETE_ARRAY(dashPkt[i].rwpk->rectRegionPacking);
     SAFE_DELETE(dashPkt[i].rwpk);
     SAFE_DELETE_ARRAY(dashPkt[i].qtyResolution);
   }

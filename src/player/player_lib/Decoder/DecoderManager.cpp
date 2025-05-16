@@ -49,7 +49,7 @@ VCD_NS_BEGIN
 DecoderManager::DecoderManager()
 {
     m_handlerFactory = NULL;
-    this->m_mapAudioDecoder.clear();
+    this->m_audioDecoder = NULL;
     this->m_mapVideoDecoder.clear();
     this->m_mapCatchupVideoDecoder.clear();
     m_surfaces.resize(MAX_DECODER_NUM);
@@ -63,10 +63,9 @@ DecoderManager::~DecoderManager()
     {
         SAFE_DELETE(it->second);
     }
-    for (auto it=m_mapAudioDecoder.begin();it!=m_mapAudioDecoder.end();it++)
-    {
-        SAFE_DELETE(it->second);
-    }
+
+    SAFE_DELETE(m_audioDecoder);
+
     for (auto it=m_mapCatchupVideoDecoder.begin();it!=m_mapCatchupVideoDecoder.end();it++)
     {
         SAFE_DELETE(it->second);
@@ -109,6 +108,21 @@ RenderStatus DecoderManager::CreateVideoDecoder(uint32_t video_id, Codec_Type vi
 #ifdef _ANDROID_OS_
     ANDROID_LOGD("Create decoder decoder manager : set surface at i : %d surface is %p", m_textures[video_id], m_surfaces[video_id]);
 #endif
+    return RENDER_STATUS_OK;
+}
+
+RenderStatus DecoderManager::CreateAudioDecoder(Codec_Type audio_codec, uint64_t startPts)
+{
+    AudioDecoder *pDecoder = new AudioDecoder();
+    RenderStatus ret = pDecoder->Initialize(0, audio_codec, NULL, startPts);
+    if (RENDER_STATUS_OK != ret)
+    {
+        SAFE_DELETE(pDecoder);
+        return ret;
+    }
+
+    m_audioDecoder = pDecoder;
+
     return RENDER_STATUS_OK;
 }
 
@@ -175,6 +189,25 @@ RenderStatus DecoderManager::CheckVideoDecoders(vector<DashPacket*> packets, std
             LOG(INFO) << "Set packet eos is true! pts " << packets[i]->pts << " video id " << packets[i]->videoID << endl;
         }
     }
+    return ret;
+}
+
+RenderStatus DecoderManager::CheckAudioDecoders(DashPacket *packets, uint32_t cnt)
+{
+    RenderStatus ret = RENDER_STATUS_OK;
+    for (int i = 0; i < cnt; i++)
+    {
+        if (!m_audioDecoder)
+        {
+            ret = CreateAudioDecoder(AudioCodec_AAC, packets[i].pts);
+            if (RENDER_STATUS_OK != ret)
+            {
+                LOG(ERROR) << "audio Failed to create a decoder for it" << std::endl;
+                break;
+            }
+        } // idle status -> running status
+    }
+
     return ret;
 }
 
@@ -370,6 +403,23 @@ RenderStatus DecoderManager::UpdateVideoFrames( uint64_t pts, int64_t *corr_pts,
 #endif
 #endif
     return ret;
+}
+
+RenderStatus DecoderManager::SendAudioPackets(DashPacket *packets, uint32_t cnt)
+{
+    if(cnt > 0)
+    {
+        CheckAudioDecoders(packets, cnt);
+    }
+
+    for (int i = 0; i < cnt; ++i)
+    {
+        LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------SendPacket: size:" << packets[i].size << ", buf:" << (void *)(packets[i].buf) << std::endl;
+        m_audioDecoder->SendPacket(&packets[i]);
+        //LOG(INFO) << "send audio packet pts is : " << packets[cnt]->pts << endl;
+    }
+
+    return RENDER_STATUS_OK;
 }
 
 RenderStatus DecoderManager::CheckViewIdAvailability(HeadPose *pose) {

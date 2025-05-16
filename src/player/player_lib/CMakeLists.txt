@@ -57,10 +57,10 @@ ENDIF()
 
 IF(USE_TRACE)
   ADD_DEFINITIONS("-D_USE_TRACE_")
-  INCLUDE_DIRECTORIES(/usr/local/include ../../utils ../../trace)
+  INCLUDE_DIRECTORIES(/usr/local/include /usr/include/SDL2 ../../utils ../../trace)
   LINK_DIRECTORIES(/usr/local/lib ../../trace)
 ELSE()
-  INCLUDE_DIRECTORIES(/usr/local/include ../../utils)
+  INCLUDE_DIRECTORIES(/usr/local/include /usr/include/SDL2 ../../utils)
   LINK_DIRECTORIES(/usr/local/lib)
 ENDIF()
 
@@ -100,7 +100,7 @@ ENDIF()
 IF(LINUX_OS)
 SET(LINK_LIB ${LINK_LIB}
     avfilter avformat avcodec avdevice avutil swscale swresample
-    360SCVP GL GLU X11 pthread lzma z glog EGL GLESv2 dl)
+    360SCVP GL GLU X11 pthread lzma z glog EGL GLESv2 dl SDL2)
 IF(USE_SAFE_MEM)
 SET(LINK_LIB ${LINK_LIB} safestring_shared)
 ENDIF()
