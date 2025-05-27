@@ -114,6 +114,7 @@ RenderStatus DecoderManager::CreateVideoDecoder(uint32_t video_id, Codec_Type vi
 RenderStatus DecoderManager::CreateAudioDecoder(Codec_Type audio_codec, uint64_t startPts)
 {
     AudioDecoder *pDecoder = new AudioDecoder();
+    pDecoder->SetDecodeInfo(m_decodeInfo);
     RenderStatus ret = pDecoder->Initialize(0, audio_codec, NULL, startPts);
     if (RENDER_STATUS_OK != ret)
     {
@@ -199,7 +200,7 @@ RenderStatus DecoderManager::CheckAudioDecoders(DashPacket *packets, uint32_t cn
     {
         if (!m_audioDecoder)
         {
-            ret = CreateAudioDecoder(AudioCodec_AAC, packets[i].pts);
+            ret = CreateAudioDecoder(m_decodeInfo.audio_codec_type, packets[i].pts);
             if (RENDER_STATUS_OK != ret)
             {
                 LOG(ERROR) << "audio Failed to create a decoder for it" << std::endl;

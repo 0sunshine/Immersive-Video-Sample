@@ -193,6 +193,8 @@ RenderStatus DashMediaSource::Initialize(struct RenderConfig renderConfig, Rende
   DashMediaInfo mediaInfo;
   OmafAccess_GetMediaInfo(m_handler, &mediaInfo);
 
+  // avit note: both audio and video, mediaInfo's codec_type incorrect
+
   m_rsFactory = rsFactory;
 
   SetMediaInfo(&mediaInfo);
@@ -215,6 +217,13 @@ RenderStatus DashMediaSource::Initialize(struct RenderConfig renderConfig, Rende
   decode_info.frameRate_num = mediaInfo.stream_info[vi.streamID].framerate_num;
   decode_info.segment_duration = mediaInfo.stream_info[vi.streamID].segmentDuration;
   m_segmentDuration = mediaInfo.stream_info[vi.streamID].segmentDuration;
+
+  AudioInfo ai;
+  mMediaInfo.GetActiveAudioInfo(ai);
+  decode_info.audio_codec_type = AudioCodec_AAC;
+  decode_info.channels = mediaInfo.stream_info[ai.streamID].channels;
+  decode_info.sample_rate = mediaInfo.stream_info[ai.streamID].sample_rate;
+
   m_DecoderManager->SetDecodeInfo(decode_info);
   RenderStatus ret = m_DecoderManager->Initialize(m_rsFactory);
   if (RENDER_STATUS_OK != ret) {

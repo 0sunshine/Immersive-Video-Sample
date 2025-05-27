@@ -40,14 +40,53 @@
 
 extern "C"
 {
-#include <libavfilter/buffersink.h>
 #include <libavfilter/avfilter.h>
+#include <libavfilter/buffersrc.h>
 #include <libavfilter/buffersink.h>
 #include <libavutil/avutil.h>
 #include <libavutil/opt.h>
+#include <SDL.h>
 }
 
 VCD_NS_BEGIN
+
+class AudioOutputer
+{
+public:
+     AudioOutputer();
+     ~AudioOutputer();
+
+     bool Initialize(int32_t sample_rate, AVSampleFormat sample_fmt, int32_t channels, int64_t channel_layout);
+     void UnInitialize();
+
+     void AddOriginalFrame(AVFrame *frame);
+     AVFrame* PopFrame();
+
+private:
+     bool InitFilter(int32_t sample_rate, AVSampleFormat sample_fmt, int32_t channels, int64_t channel_layout);
+     void GetAudioSpec(SDL_AudioSpec& wanted_spec);
+     bool InitSDL();
+
+     void UnInitFilter();
+     void UnInitSDL();
+
+     static int ConfigFilterGraph(AVFilterGraph *graph, const char *filtergraph,
+                                      AVFilterContext *source_ctx, AVFilterContext *sink_ctx);
+
+     static void SDLAudioCallback(void *opaque, Uint8 *stream, int len);
+
+     void AddFrame(AVFrame *frame);
+
+private:
+     AVFilterGraph* m_agraph;
+     AVFilterContext* m_in_audio_filter;  // the first filter in the audio chain
+     AVFilterContext* m_out_audio_filter; // the last filter in the audio chain
+
+     SDL_AudioDeviceID mAudioDev;
+
+     ThreadLock mFrameLock;
+     std::list<AVFrame*> mFrames;
+};
 
 struct AudioDecoderContext
 {
@@ -69,16 +108,8 @@ public:
 
      ~AudioDecoderContext()
      {
-          AVFrame *frame = pop_frame();
-          while (frame)
-          {
-               av_frame_free(&frame);
-
-               frame = pop_frame();
-          }
-
           AVPacket *pkt = pop_packet();
-          while (frame)
+          while (pkt)
           {
                av_packet_free(&pkt);
 
@@ -104,23 +135,6 @@ public:
           return pkt;
      };
 
-     void push_frame(AVFrame *frame)
-     {
-          ScopeLock lock(FrameLock);
-          listFrame.push_back(frame);
-     };
-
-     AVFrame *pop_frame()
-     {
-          ScopeLock lock(FrameLock);
-          AVFrame *frame = NULL;
-          if (!listFrame.empty())
-          {
-               frame = listFrame.front();
-               listFrame.pop_front();
-          }
-          return frame;
-     };
 
      uint32_t get_size_of_packet()
      {
@@ -129,12 +143,6 @@ public:
           return size;
      };
 
-     uint32_t get_size_of_frame()
-     {
-          ScopeLock lock(FrameLock);
-          uint32_t size = listFrame.size();
-          return size;
-     };
 
      AVCodecID codec_id;
      AVCodecContext *codec_ctx;
@@ -160,6 +168,7 @@ public:
      //!
      //! \brief initialize a video decoder based on input information
      //!
+     void SetDecodeInfo(DecodeInfo& info);
      virtual RenderStatus Initialize(int32_t id, Codec_Type codec, FrameHandler *handler, uint64_t startPts);
 
      //!
@@ -201,11 +210,12 @@ private:
      RenderStatus DecodeFrame(AVPacket *pkt);
 
 private:
+     DecodeInfo m_decodeInfo;
      AudioDecoderContext *mDecCtx;
      AVPacket *mPkt;
      bool mIsFlushed;
 
-     bool mIsInitAudioOutput;
+     AudioOutputer mAudioOutputer;
 };
 
 VCD_NS_END

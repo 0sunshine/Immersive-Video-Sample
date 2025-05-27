@@ -292,7 +292,10 @@ typedef struct DecodeInfo{
     uint32_t frameRate_num;
     uint32_t frameRate_den;
     uint32_t segment_duration;
-    // ...
+
+    Codec_Type audio_codec_type;
+    int32_t channels;
+    int32_t  sample_rate;
 }DecodeInfo;
 
 struct BufferInfo {
