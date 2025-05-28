@@ -52,7 +52,13 @@
 #define WAIT_PACKET_TIME_OUT 10000 // 10s
 #define TEST_GET_PACKET_ONLY 0
 #define MAX_DUMP_FILE_NUM 20
+
+#ifndef AVIT_LOG_TAG
+#define AVIT_LOG_TAG "avit log >>>>>>>>"
+#endif
+
 using namespace tinyxml2;
+
 
 VCD_NS_BEGIN
 
@@ -521,6 +527,8 @@ RenderStatus DashMediaSource::UpdateFrames(uint64_t pts, int64_t *corr_pts, Head
   if (NULL == m_DecoderManager) return RENDER_NO_MATCHED_DECODER;
 
   RenderStatus ret = m_DecoderManager->UpdateVideoFrames(pts, corr_pts, pose);
+
+  LOG(ERROR) << AVIT_LOG_TAG << "UpdateVideoFrames pts " << pts;
 
   if (RENDER_STATUS_OK != ret) {
     LOG(INFO) << "DashMediaSource::UpdateFrames failed with code:" << ret << std::endl;

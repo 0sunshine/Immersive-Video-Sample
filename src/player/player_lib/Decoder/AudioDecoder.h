@@ -88,6 +88,13 @@ private:
      std::list<AVFrame*> mFrames;
 };
 
+typedef struct AudioPacketInfo
+{
+     AVPacket *pkt = nullptr;
+     bool bEOS = false;
+     uint64_t pts = 0;
+} AudioPacketInfo;
+
 struct AudioDecoderContext
 {
 public:
@@ -100,7 +107,6 @@ public:
           in_audio_filter = NULL;
           out_audio_filter = NULL;
 
-          listFrame.clear();
           listPacket.clear();
 
           bPacketEOS = false;
@@ -108,25 +114,26 @@ public:
 
      ~AudioDecoderContext()
      {
-          AVPacket *pkt = pop_packet();
-          while (pkt)
+          AudioPacketInfo *pkt_info = pop_packet();
+          while (pkt_info)
           {
-               av_packet_free(&pkt);
+               av_packet_free(&pkt_info->pkt);
+               SAFE_DELETE(pkt_info);
 
-               pkt = pop_packet();
+               pkt_info = pop_packet();
           }
      };
 
-     void push_packet(AVPacket *pktInfo)
+     void push_packet(AudioPacketInfo *pktInfo)
      {
           ScopeLock lock(PacketLock);
           listPacket.push_back(pktInfo);
      };
 
-     AVPacket *pop_packet()
+     AudioPacketInfo *pop_packet()
      {
           ScopeLock lock(PacketLock);
-          AVPacket *pkt = NULL;
+          AudioPacketInfo *pkt = NULL;
           if (!listPacket.empty())
           {
                pkt = listPacket.front();
@@ -151,11 +158,8 @@ public:
      AVFilterContext* in_audio_filter;  // the first filter in the audio chain
      AVFilterContext* out_audio_filter; // the last filter in the audio chain
 
-     std::list<AVFrame*> listFrame;
-     std::list<AVPacket*> listPacket;
-
-     ThreadLock FrameLock;
      ThreadLock PacketLock;
+     std::list<AudioPacketInfo*> listPacket;
 
      bool bPacketEOS;
 };
@@ -213,6 +217,7 @@ private:
      DecodeInfo m_decodeInfo;
      AudioDecoderContext *mDecCtx;
      AVPacket *mPkt;
+     AudioPacketInfo *mPktInfo;
      bool mIsFlushed;
 
      AudioOutputer mAudioOutputer;

@@ -146,6 +146,8 @@ bool AudioOutputer::InitFilter(int32_t sample_rate, AVSampleFormat sample_fmt, i
 {
     static const enum AVSampleFormat sample_fmts[] = {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE};
     AVFilterContext *filt_asrc = NULL, *filt_asink = NULL;
+    char asrc_args[256];
+    int pos = 0;
 
     int64_t vaild_channel_layout = channel_layout;
     if (!vaild_channel_layout)
@@ -158,10 +160,9 @@ bool AudioOutputer::InitFilter(int32_t sample_rate, AVSampleFormat sample_fmt, i
         goto fail;
     m_agraph->nb_threads = 0;
 
-    char asrc_args[256];
-    int pos = snprintf(asrc_args, sizeof(asrc_args),
-                       "sample_rate=%d:sample_fmt=%s:channels=%d:time_base=%d/%d",
-                       sample_rate, av_get_sample_fmt_name(sample_fmt),channels, 1, sample_rate);
+    pos = snprintf(asrc_args, sizeof(asrc_args),
+                    "sample_rate=%d:sample_fmt=%s:channels=%d:time_base=%d/%d",
+                    sample_rate, av_get_sample_fmt_name(sample_fmt),channels, 1, sample_rate);
 
     if (vaild_channel_layout)
     {
@@ -343,7 +344,7 @@ void AudioOutputer::SDLAudioCallback(void *opaque, Uint8 *stream, int len)
 
             int remain_bytes = data_size - sCurrFrameReadByte;
 
-            LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------SDL_audio_callback remain_bytes: " << remain_bytes << ", channels: " << sCurrFrame->channels << ", format:" << sCurrFrame->format << ", size:" << sCurrFrame->linesize[0];
+            LOG(ERROR) << AVIT_LOG_TAG << "SDL_audio_callback pts " << sCurrFrame->pts;
 
             int buf_size = (len - copy_size);
 
@@ -356,7 +357,7 @@ void AudioOutputer::SDLAudioCallback(void *opaque, Uint8 *stream, int len)
                 sCurrFrameReadByte = 0;
                 copy_size += remain_bytes;
 
-                LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------SDL_audio_callback copy: " << remain_bytes;
+                //LOG(ERROR) << AVIT_LOG_TAG << "SDL_audio_callback copy: " << remain_bytes;
             }
             else
             {
@@ -364,17 +365,17 @@ void AudioOutputer::SDLAudioCallback(void *opaque, Uint8 *stream, int len)
                 sCurrFrameReadByte += buf_size;
                 copy_size += buf_size;
 
-                LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------SDL_audio_callback copy: " << buf_size;
+                //LOG(ERROR) << AVIT_LOG_TAG << "SDL_audio_callback copy: " << buf_size;
             }
         }
 
         if (!sCurrFrame)
         {
-            LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------SDL_audio_callback pop_frame";
+            LOG(ERROR) << AVIT_LOG_TAG << "SDL_audio_callback pop_frame";
             sCurrFrame = pAudioOutputer->PopFrame();
             if(!sCurrFrame)
             {
-                usleep(1000 * 100);
+                usleep(1000 * 30);
             }
             sCurrFrameReadByte = 0;
         }
@@ -385,6 +386,7 @@ AudioDecoder::AudioDecoder()
 {
     mDecCtx = new AudioDecoderContext();
     mPkt = NULL;
+    mPktInfo = NULL;
     mIsFlushed = false;
 }
 
@@ -460,7 +462,6 @@ RenderStatus AudioDecoder::Initialize(int32_t id, Codec_Type codec, FrameHandler
     StartThread();
     mIsFlushed = false;
     LOG(INFO) << "A new audio decoder is created!" << std::endl;
-    LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------A new audio decoder is created: "<< std::endl;
 
     return RENDER_STATUS_OK;
 }
@@ -492,9 +493,7 @@ void AudioDecoder::Run()
             usleep(1000);
             continue;
         }
-        AVPacket *pkt_info = mDecCtx->pop_packet();
-
-        LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------pop_packet: " << pkt_info << std::endl;
+        AudioPacketInfo *pkt_info = mDecCtx->pop_packet();
 
         if (NULL == pkt_info)
         {
@@ -510,13 +509,16 @@ void AudioDecoder::Run()
         //     continue;
         // }
 
-        ret = DecodeFrame(pkt_info);
+        pkt_info->pkt->pts = pkt_info->pts;
+        ret = DecodeFrame(pkt_info->pkt);
         if (RENDER_STATUS_OK != ret)
         {
             LOG(INFO) << "Audio failed to decoder one frame" << std::endl;
         }
 
-        av_packet_unref(pkt_info);
+        //LOG(ERROR) << AVIT_LOG_TAG << "Audio decode Pts: " << pkt_info->pts << endl;
+
+        av_packet_free(&pkt_info->pkt);
 
         SAFE_DELETE(pkt_info);
     }
@@ -524,6 +526,19 @@ void AudioDecoder::Run()
 
 RenderStatus AudioDecoder::SendPacket(DashPacket *packet)
 {
+    if (NULL == packet) return RENDER_NULL_PACKET;
+
+    if (packet->bEOS && !packet->bCatchup) // eos
+    {
+        AudioPacketInfo *endPkt = new AudioPacketInfo;
+        endPkt->pkt = nullptr;
+        endPkt->bEOS = true;
+        mDecCtx->push_packet(endPkt);
+        mDecCtx->bPacketEOS = true;
+        return RENDER_STATUS_OK;
+    }
+
+    mPktInfo = new AudioPacketInfo;
     mPkt = av_packet_alloc();
 
     int size = packet->size;
@@ -536,12 +551,17 @@ RenderStatus AudioDecoder::SendPacket(DashPacket *packet)
     memcpy_s(mPkt->data, size, packet->buf, size);
     mPkt->size = packet->size;
 
+    mPktInfo->pkt = mPkt;
+    mPktInfo->bEOS = packet->bEOS;
+    mPktInfo->pts = packet->pts;
+
     SAFE_FREE(packet->buf);
     SAFE_DELETE(packet->rwpk);
 
-    LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------push_packet: " << mPkt << ", size: " << size << std::endl;
-    mDecCtx->push_packet(mPkt);
+    mDecCtx->push_packet(mPktInfo);
+
     mPkt = NULL;
+    mPktInfo = NULL;
 }
 
 RenderStatus AudioDecoder::FlushDecoder()
@@ -553,9 +573,10 @@ RenderStatus AudioDecoder::DecodeFrame(AVPacket *pkt)
 {
     int32_t ret = 0;
     ret = avcodec_send_packet(mDecCtx->codec_ctx, pkt);
+    //av_packet_unref(pkt);
     if (ret < 0)
     {
-        LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------audio Send packet failed! ret: " << ret << ", size:" << pkt->size << ", data:" << (void *)(pkt->data) << endl;
+        LOG(ERROR) << AVIT_LOG_TAG << "audio Send packet failed! ret: " << ret << ", size:" << pkt->size << ", data:" << (void *)(pkt->data) << endl;
         return RENDER_DECODE_FAIL;
     }
 
