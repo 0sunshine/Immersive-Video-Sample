@@ -555,6 +555,8 @@ void OmafCurlMultiDownloader::threadRunner(void) noexcept {
       retriveDoneTask();
 
       ProcessDataTasks();
+
+      usleep(1000 * 5);
     }
   } catch (const std::exception& ex) {
     OMAF_LOG(LOG_ERROR, "Exception in the multi thread worker, ex: %s\n", ex.what());
