@@ -42,6 +42,8 @@
 
 VCD_NS_BEGIN
 
+std::mutex RenderSourceFactory::s_SWRenderSourceMutex;
+std::list<RenderSource*> RenderSourceFactory::s_SWRenderSource;
 
 RenderSourceFactory::RenderSourceFactory(void *window)
 {
@@ -63,8 +65,13 @@ RenderSourceFactory::~RenderSourceFactory()
 FrameHandler* RenderSourceFactory::CreateHandler(uint32_t video_id, uint32_t tex_id)
 {
 #ifdef _LINUX_OS_
-    glfwMakeContextCurrent((GLFWwindow*)share_window); // share context in multiple thread
-    SWRenderSource* rs = new SWRenderSource();
+    SWRenderSource *rs = NULL;
+    {
+        std::lock_guard<std::mutex> lg(s_SWRenderSourceMutex);
+        rs = (SWRenderSource *)s_SWRenderSource.front();
+        s_SWRenderSource.pop_front();
+    }
+    glfwMakeContextCurrent((GLFWwindow *)share_window); // share context in multiple thread
 #endif
 #ifdef _ANDROID_OS_
     MediaCodecRenderSource* rs = new MediaCodecRenderSource(tex_id);
@@ -97,6 +104,16 @@ RenderStatus RenderSourceFactory::RemoveAll()
         // it=mMapRenderSource.erase(it);
     }
     return RENDER_STATUS_OK;
+}
+
+void RenderSourceFactory::PreCreateSWRenderSource(int n)
+{
+    std::lock_guard<std::mutex> lg(s_SWRenderSourceMutex);
+    while (--n)
+    {
+        RenderSource *rs = new SWRenderSource();
+        s_SWRenderSource.push_back(rs);
+    }
 }
 
 VCD_NS_END

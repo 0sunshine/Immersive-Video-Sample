@@ -37,6 +37,9 @@
 #include "RenderSource.h"
 #include "../Decoder/FrameHandlerFactory.h"
 
+#include <list>
+#include <mutex>
+
 VCD_NS_BEGIN
 class RenderSourceFactory : public FrameHandlerFactory
 {
@@ -118,6 +121,7 @@ public:
      uint32_t GetHighTileCol(){return m_highTileCol;};
      void SetHighTileCol(uint32_t col) {m_highTileCol = col;};
 
+     static void PreCreateSWRenderSource(int n);
 private:
      std::map<uint32_t, RenderSource*> mMapRenderSource;    //! map for <video_id and handler>
      SourceResolution                 *m_sourceResolution;
@@ -128,6 +132,10 @@ private:
      int32_t                           m_sourceMode;
      void                              *share_window;
 
+
+
+     static std::mutex s_SWRenderSourceMutex;
+     static std::list<RenderSource*> s_SWRenderSource;
 };
 
 VCD_NS_END

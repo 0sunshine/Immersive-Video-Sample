@@ -96,6 +96,7 @@ RenderStatus MediaPlayer_Linux::Start(void *render_context)
 
     //initial RenderSource
     m_rsFactory = new RenderSourceFactory(window);
+    m_rsFactory->PreCreateSWRenderSource(10);
 
     //initial MediaSource
     switch (m_renderConfig.sourceType)
