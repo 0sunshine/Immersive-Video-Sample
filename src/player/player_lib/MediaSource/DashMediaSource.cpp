@@ -484,7 +484,8 @@ void DashMediaSource::ProcessAudioPacket() {
     return;
   }
 
-  LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------Audio GetPacket: " << dashPktNum << "! " << dashPkt[0].size << std::endl;
+  //LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------Audio GetPacket: " << dashPktNum << "! " << dashPkt[0].size << std::endl;
+  //ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx666-------------Audio GetPacket, dashPktNum: %d, dashPkt[0]:%p", dashPktNum, dashPkt);
 
   if (NULL != m_DecoderManager)
   {
@@ -528,7 +529,7 @@ RenderStatus DashMediaSource::UpdateFrames(uint64_t pts, int64_t *corr_pts, Head
 
   RenderStatus ret = m_DecoderManager->UpdateVideoFrames(pts, corr_pts, pose);
 
-  LOG(ERROR) << AVIT_LOG_TAG << "UpdateVideoFrames pts " << pts;
+  //LOG(ERROR) << AVIT_LOG_TAG << "UpdateVideoFrames pts " << pts;
 
   if (RENDER_STATUS_OK != ret) {
     LOG(INFO) << "DashMediaSource::UpdateFrames failed with code:" << ret << std::endl;

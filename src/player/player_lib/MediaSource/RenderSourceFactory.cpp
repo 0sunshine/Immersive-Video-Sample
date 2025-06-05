@@ -108,12 +108,14 @@ RenderStatus RenderSourceFactory::RemoveAll()
 
 void RenderSourceFactory::PreCreateSWRenderSource(int n)
 {
+#ifdef _LINUX_OS_
     std::lock_guard<std::mutex> lg(s_SWRenderSourceMutex);
     while (--n)
     {
         RenderSource *rs = new SWRenderSource();
         s_SWRenderSource.push_back(rs);
     }
+#endif
 }
 
 VCD_NS_END

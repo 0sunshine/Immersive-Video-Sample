@@ -216,10 +216,10 @@ public class VideoActivity extends Activity {
 
     private void SetDaultValues() {
         // default value for the first time
-        urlText.setText("http://x.x.x.x:x/xxx/Test.mpd");
+        urlText.setText("http://192.168.6.241:80/LIVE4K2/Test.mpd");
         sourceTypeText.setText("0");
         extractorText.setText("false");
-        cachePathText.setText("sdcard/Android/data/tmp/");
+        cachePathText.setText("sdcard/tmp/");
         maxWidthText.setText("4096");
         maxHeightText.setText("3200");
         hasPredictText.setText("false");

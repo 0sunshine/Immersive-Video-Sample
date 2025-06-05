@@ -49,18 +49,23 @@ ENDIF()
 
 IF(LINUX_OS)
   ADD_DEFINITIONS("-D_LINUX_OS_")
+  INCLUDE_DIRECTORIES(/usr/include/SDL2)
 ENDIF()
 
 IF(ANDROID_OS)
   ADD_DEFINITIONS("-D_ANDROID_OS_")
+  INCLUDE_DIRECTORIES(${ANDROID_SYSROOT}/usr/include/SDL2)
+  INCLUDE_DIRECTORIES(/mnt/d/msys64/home/code/vr/ffm_android/android/armv8-a/include)
+  LINK_DIRECTORIES(/mnt/d/task/vr/SDL/libs/arm64-v8a)
+  LINK_DIRECTORIES(/mnt/d/msys64/home/code/vr/ffm_android/android/armv8-a/lib)
 ENDIF()
 
 IF(USE_TRACE)
   ADD_DEFINITIONS("-D_USE_TRACE_")
-  INCLUDE_DIRECTORIES(/usr/local/include /usr/include/SDL2 ../../utils ../../trace)
+  INCLUDE_DIRECTORIES(/usr/local/include ../../utils ../../trace)
   LINK_DIRECTORIES(/usr/local/lib ../../trace)
 ELSE()
-  INCLUDE_DIRECTORIES(/usr/local/include /usr/include/SDL2 ../../utils)
+  INCLUDE_DIRECTORIES(/usr/local/include ../../utils)
   LINK_DIRECTORIES(/usr/local/lib)
 ENDIF()
 
@@ -108,7 +113,8 @@ ENDIF()
 
 IF(ANDROID_OS)
 SET(LINK_LIB ${LINK_LIB}
-    360SCVP glog android mediandk OpenMAXAL log GLESv2 GLESv3)
+    avfilter avformat avcodec avutil swscale swresample
+    360SCVP glog aaudio android mediandk OpenMAXAL log GLESv2 GLESv3)
 IF(USE_SAFE_MEM)
 SET(LINK_LIB ${LINK_LIB} safestring_shared)
 ENDIF()

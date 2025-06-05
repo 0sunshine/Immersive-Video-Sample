@@ -40,13 +40,26 @@
 
 extern "C"
 {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/imgutils.h>
+#include <libavutil/pixfmt.h>
+#include <libavutil/samplefmt.h>
+#include <libswscale/swscale.h>
 #include <libavfilter/avfilter.h>
 #include <libavfilter/buffersrc.h>
 #include <libavfilter/buffersink.h>
 #include <libavutil/avutil.h>
 #include <libavutil/opt.h>
-#include <SDL.h>
 }
+
+#ifdef _ANDROID_OS_
+#include <aaudio/AAudio.h>
+#else
+#include <SDL.h>
+#define ANDROID_LOGD(...)
+#define ANDROID_LOGE(...)
+#endif
 
 VCD_NS_BEGIN
 
@@ -64,7 +77,11 @@ public:
 
 private:
      bool InitFilter(int32_t sample_rate, AVSampleFormat sample_fmt, int32_t channels, int64_t channel_layout);
+
+#ifndef _ANDROID_OS_
      void GetAudioSpec(SDL_AudioSpec& wanted_spec);
+#endif
+
      bool InitSDL();
 
      void UnInitFilter();
@@ -73,7 +90,11 @@ private:
      static int ConfigFilterGraph(AVFilterGraph *graph, const char *filtergraph,
                                       AVFilterContext *source_ctx, AVFilterContext *sink_ctx);
 
-     static void SDLAudioCallback(void *opaque, Uint8 *stream, int len);
+     static void SDLAudioCallback(void *opaque, uint8_t *stream, int len);
+
+#ifdef _ANDROID_OS_
+     static aaudio_data_callback_result_t AAudioStreamCallback(AAudioStream *stream,void *userData,void *audioData,int32_t numFrames);
+#endif
 
      void AddFrame(AVFrame *frame);
 
@@ -82,7 +103,11 @@ private:
      AVFilterContext* m_in_audio_filter;  // the first filter in the audio chain
      AVFilterContext* m_out_audio_filter; // the last filter in the audio chain
 
+#ifdef _ANDROID_OS_
+     AAudioStream *mAAudioStream;
+#else
      SDL_AudioDeviceID mAudioDev;
+#endif
 
      ThreadLock mFrameLock;
      std::list<AVFrame*> mFrames;

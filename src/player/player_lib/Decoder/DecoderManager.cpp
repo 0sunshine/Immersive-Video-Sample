@@ -413,11 +413,16 @@ RenderStatus DecoderManager::SendAudioPackets(DashPacket *packets, uint32_t cnt)
         CheckAudioDecoders(packets, cnt);
     }
 
-    for (int i = 0; i < cnt; ++i)
+    if(!m_audioDecoder)
     {
-        LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------SendPacket: size:" << packets[i].size << ", buf:" << (void *)(packets[i].buf) << std::endl;
+        return RENDER_STATUS_OK;
+    }
+
+    for (uint32_t i = 0; i < cnt; ++i)
+    {
+        //LOG(ERROR) << ".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------SendPacket: size:" << packets[i].size << ", buf:" << (void *)(packets[i].buf) << std::endl;
         m_audioDecoder->SendPacket(&packets[i]);
-        //LOG(INFO) << "send audio packet pts is : " << packets[cnt]->pts << endl;
+        //LOG(INFO) << "send audio packet pts is : " << packets[cnt].pts << endl;
     }
 
     return RENDER_STATUS_OK;

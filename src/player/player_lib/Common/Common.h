@@ -49,6 +49,7 @@
 #include <android/log.h>
 #define LOG_TAG "Player"
 #define ANDROID_LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
+#define ANDROID_LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #endif
 
 #define NTP_OFFSET 2208988800ULL

@@ -50,7 +50,12 @@ AudioOutputer::AudioOutputer()
     m_agraph = NULL;
     m_in_audio_filter = NULL;
     m_out_audio_filter = NULL;
+
+#ifdef _ANDROID_OS_
+    mAAudioStream = 0;
+#else
     mAudioDev = 0;
+#endif
 }
 
 AudioOutputer::~AudioOutputer()
@@ -62,12 +67,14 @@ bool AudioOutputer::Initialize(int32_t sample_rate, AVSampleFormat sample_fmt, i
 {
     if(!InitFilter(sample_rate, sample_fmt, channels, channel_layout) )
     {
+        ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------InitFilter failed!");
         LOG(ERROR) << AVIT_LOG_TAG << "InitFilter failed" << std::endl;
         return false;
     }
 
     if (!InitSDL())
     {
+        ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------InitSDL failed!");
         LOG(ERROR) << AVIT_LOG_TAG << "InitSDL failed" << std::endl;
         return false;
     }
@@ -91,7 +98,7 @@ void AudioOutputer::UnInitialize()
 
 void AudioOutputer::AddOriginalFrame(AVFrame *frame)
 {
-    LOG(ERROR) << AVIT_LOG_TAG << "AddOriginalFrame" << std::endl;
+    //LOG(ERROR) << AVIT_LOG_TAG << "AddOriginalFrame" << std::endl;
 
     av_buffersrc_add_frame(m_in_audio_filter, frame);
 
@@ -107,6 +114,11 @@ void AudioOutputer::AddOriginalFrame(AVFrame *frame)
 AVFrame* AudioOutputer::PopFrame()
 {
     ScopeLock lock(mFrameLock);
+    // if (mFrames.size() < 50)
+    // {
+    //     return NULL;
+    // }
+
     if (mFrames.empty())
     {
         return NULL;
@@ -120,18 +132,18 @@ AVFrame* AudioOutputer::PopFrame()
 
 void AudioOutputer::AddFrame(AVFrame *frame)
 {
-    LOG(ERROR) << AVIT_LOG_TAG << "AddFrame" << std::endl;
+    //LOG(ERROR) << AVIT_LOG_TAG << "AddFrame" << std::endl;
 
     AVFrame *drop = NULL;
 
     {
         ScopeLock lock(mFrameLock);
-        if (mFrames.size() > 200)
-        {
-            LOG(ERROR) << AVIT_LOG_TAG << "too many frames: " << mFrames.size() << ", drop front" << std::endl;
-            drop = mFrames.front();
-            mFrames.pop_front();
-        }
+        // if (mFrames.size() > 2000)
+        // {
+        //     LOG(ERROR) << AVIT_LOG_TAG << "too many frames: " << mFrames.size() << ", drop front" << std::endl;
+        //     drop = mFrames.front();
+        //     mFrames.pop_front();
+        // }
 
         mFrames.push_back(frame);
     }
@@ -198,6 +210,7 @@ fail:
     return false;
 }
 
+#ifndef _ANDROID_OS_
 void AudioOutputer::GetAudioSpec(SDL_AudioSpec& wanted_spec)
 {
     int wanted_nb_channels = av_buffersink_get_channels(m_out_audio_filter);
@@ -218,6 +231,7 @@ void AudioOutputer::GetAudioSpec(SDL_AudioSpec& wanted_spec)
     wanted_spec.callback = SDLAudioCallback;
     wanted_spec.userdata = this;
 }
+#endif
 
 void AudioOutputer::UnInitFilter()
 {
@@ -228,16 +242,66 @@ void AudioOutputer::UnInitFilter()
 
 void AudioOutputer::UnInitSDL()
 {
+
+#ifdef _ANDROID_OS_
+    if (mAAudioStream)
+    {
+        AAudioStream_close(mAAudioStream);
+        mAAudioStream = nullptr;
+    }
+#else
     if (mAudioDev)
     {
         SDL_CloseAudioDevice(mAudioDev);
         mAudioDev = 0;
     }
+#endif
 }
 
 bool AudioOutputer::InitSDL()
 {
-    if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_AUDIO))
+
+#ifdef _ANDROID_OS_
+    AAudioStreamBuilder *builder;
+    aaudio_result_t result = AAudio_createStreamBuilder(&builder);
+    if (result != AAUDIO_OK)
+    {
+        ANDROID_LOGE("createStreamBuilder Fail: %s!", AAudio_convertResultToText(result));
+        return false;
+    }
+
+    AAudioStreamBuilder_setDeviceId(builder, AAUDIO_UNSPECIFIED);
+    AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_OUTPUT);
+    AAudioStreamBuilder_setSharingMode(builder, AAUDIO_SHARING_MODE_EXCLUSIVE);
+    AAudioStreamBuilder_setSampleRate(builder, 48000);
+    AAudioStreamBuilder_setChannelCount(builder, 2);
+    AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_I16);
+    // AAudioStreamBuilder_setBufferCapacityInFrames(builder, frames);
+
+    AAudioStreamBuilder_setDataCallback(builder, &AAudioStreamCallback, this);
+    AAudioStreamBuilder_setPerformanceMode(builder, AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);
+
+    result = AAudioStreamBuilder_openStream(builder, &mAAudioStream);
+    AAudioStreamBuilder_delete(builder);
+
+    if(result != AAUDIO_OK)
+    {
+        ANDROID_LOGE("AAudioStreamBuilder_openStream Fail: %s!", AAudio_convertResultToText(result));
+        return false;
+    }
+
+    result = AAudioStream_requestStart(mAAudioStream);
+    if (result != AAUDIO_OK)
+    {
+        AAudioStream_close(mAAudioStream);
+        mAAudioStream = nullptr;
+
+        ANDROID_LOGE("AAudioStream_requestStart Fail: %s!", AAudio_convertResultToText(result));
+        return false;
+    }
+
+#else
+    if (SDL_Init(SDL_INIT_AUDIO))
     {
         LOG(ERROR) << AVIT_LOG_TAG << "SDL Could not initialize SDL" << SDL_GetError();
         return false;
@@ -274,6 +338,8 @@ bool AudioOutputer::InitSDL()
     audio_hw_params.bytes_per_sec = av_samples_get_buffer_size(NULL, audio_hw_params.channels, audio_hw_params.freq, audio_hw_params.fmt, 1);
 
     SDL_PauseAudioDevice(mAudioDev, 0);
+
+#endif
 
     return true;
 }
@@ -325,7 +391,7 @@ fail:
     return ret;
 }
 
-void AudioOutputer::SDLAudioCallback(void *opaque, Uint8 *stream, int len)
+void AudioOutputer::SDLAudioCallback(void *opaque, uint8_t *stream, int len)
 {
     AudioOutputer *pAudioOutputer = (AudioOutputer *)opaque;
 
@@ -340,11 +406,11 @@ void AudioOutputer::SDLAudioCallback(void *opaque, Uint8 *stream, int len)
         {
             int data_size = av_samples_get_buffer_size(NULL, sCurrFrame->channels,
                                                        sCurrFrame->nb_samples,
-                                                       1, 1);
+                                                       AV_SAMPLE_FMT_S16, 1);
 
             int remain_bytes = data_size - sCurrFrameReadByte;
 
-            LOG(ERROR) << AVIT_LOG_TAG << "SDL_audio_callback pts " << sCurrFrame->pts;
+            //LOG(ERROR) << AVIT_LOG_TAG << "SDL_audio_callback pts " << sCurrFrame->pts;
 
             int buf_size = (len - copy_size);
 
@@ -371,16 +437,32 @@ void AudioOutputer::SDLAudioCallback(void *opaque, Uint8 *stream, int len)
 
         if (!sCurrFrame)
         {
-            LOG(ERROR) << AVIT_LOG_TAG << "SDL_audio_callback pop_frame";
+            //LOG(ERROR) << AVIT_LOG_TAG << "SDL_audio_callback pop_frame";
             sCurrFrame = pAudioOutputer->PopFrame();
             if(!sCurrFrame)
             {
-                usleep(1000 * 30);
+                LOG(ERROR) << AVIT_LOG_TAG << "no audio frame";
+                usleep(1000 * 5);
             }
             sCurrFrameReadByte = 0;
         }
     }
 }
+
+#ifdef _ANDROID_OS_
+aaudio_data_callback_result_t AudioOutputer::AAudioStreamCallback(AAudioStream *stream, void *userData, void *audioData, int32_t numFrames)
+{
+    int len = numFrames * 2 * 2; // PCM_I16 stereo
+
+    //ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------AAudioStreamCallback: %d, len: %d", numFrames, len);
+
+    SDLAudioCallback(userData, (uint8_t*)audioData, len);
+
+    //ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------AAudioStreamCallback end");
+
+    return AAUDIO_CALLBACK_RESULT_CONTINUE;
+}
+#endif
 
 AudioDecoder::AudioDecoder()
 {
@@ -437,24 +519,28 @@ RenderStatus AudioDecoder::Initialize(int32_t id, Codec_Type codec, FrameHandler
 
     if (NULL == mDecCtx->decoder)
     {
+        ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------audio decoder is NULL");
         LOG(ERROR) << AVIT_LOG_TAG << "audio decoder is NULL!" << std::endl;
         return RENDER_ERROR;
     }
 
     if (NULL == mDecCtx->codec_ctx)
     {
+        ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------audio decoder ctx is NULL");
         LOG(ERROR) << AVIT_LOG_TAG << "audio decoder ctx is NULL!" << std::endl;
         return RENDER_ERROR;
     }
 
     if (avcodec_open2(mDecCtx->codec_ctx, mDecCtx->decoder, NULL) < 0)
     {
+        ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------avcodec open failed!");
         LOG(ERROR) << AVIT_LOG_TAG << "avcodec open failed!" << std::endl;
         return RENDER_ERROR;
     }
 
     if( !mAudioOutputer.Initialize(mDecCtx->codec_ctx->sample_rate, mDecCtx->codec_ctx->sample_fmt, mDecCtx->codec_ctx->channels, 0))
     {
+        ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------audio output init error!");
         LOG(ERROR) << AVIT_LOG_TAG << "audio output init error!" << std::endl;
         return RENDER_ERROR;
     }
@@ -501,7 +587,8 @@ void AudioDecoder::Run()
             continue;
         }
 
-        LOG(INFO) << "Now packet pts is " << pkt_info->pts << endl;
+        //ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------Now packet pts is");
+        //LOG(INFO) << "Now packet pts is " << pkt_info->pts << endl;
 
         //todo
         // if (pkt_info->bEOS)
@@ -562,6 +649,8 @@ RenderStatus AudioDecoder::SendPacket(DashPacket *packet)
 
     mPkt = NULL;
     mPktInfo = NULL;
+
+    return RENDER_STATUS_OK;
 }
 
 RenderStatus AudioDecoder::FlushDecoder()
