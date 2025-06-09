@@ -398,12 +398,17 @@ void AudioOutputer::SDLAudioCallback(void *opaque, uint8_t *stream, int len)
     static AVFrame *sCurrFrame = NULL;
     static int sCurrFrameReadByte = 0;
 
+    int continuousNoDataTimes = 0;
+
     int copy_size = 0;
 
     while (copy_size < len)
     {
         if (sCurrFrame)
         {
+
+            continuousNoDataTimes = 0;
+            
             int data_size = av_samples_get_buffer_size(NULL, sCurrFrame->channels,
                                                        sCurrFrame->nb_samples,
                                                        AV_SAMPLE_FMT_S16, 1);
@@ -441,10 +446,16 @@ void AudioOutputer::SDLAudioCallback(void *opaque, uint8_t *stream, int len)
             sCurrFrame = pAudioOutputer->PopFrame();
             if(!sCurrFrame)
             {
+                ++continuousNoDataTimes;
                 LOG(ERROR) << AVIT_LOG_TAG << "no audio frame";
-                usleep(1000 * 5);
+                usleep(1000 * 10);
             }
             sCurrFrameReadByte = 0;
+
+            if(continuousNoDataTimes > 100)
+            {
+                return;
+            }
         }
     }
 }

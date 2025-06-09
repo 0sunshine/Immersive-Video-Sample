@@ -40,6 +40,10 @@
 #define DECODE_THREAD_COUNT 16
 #define MIN_REMAIN_SIZE_IN_FRAME 2
 
+#ifndef AVIT_LOG_TAG
+#define AVIT_LOG_TAG "avit log >>>>>>>>"
+#endif
+
 VCD_NS_BEGIN
 
 VideoDecoder::VideoDecoder()
@@ -166,6 +170,9 @@ RenderStatus VideoDecoder::SendPacket(DashPacket* packet)
         endPkt->bEOS = true;
         mDecCtx->push_packet(endPkt);
         mDecCtx->bPacketEOS = true;
+
+        LOG(ERROR) << AVIT_LOG_TAG << "get bPacketEOS, pkt ptr:" << &packet << endl;
+
         return RENDER_STATUS_OK;
     }
     RenderStatus ret = RENDER_STATUS_OK;
@@ -333,6 +340,8 @@ RenderStatus VideoDecoder::DecodeFrame(AVPacket *pkt, uint32_t video_id, uint64_
 
 RenderStatus VideoDecoder::FlushDecoder(uint32_t video_id)
 {
+    LOG(ERROR) << AVIT_LOG_TAG << "VideoDecoder::FlushDecoder ..." << video_id << endl;
+
     int32_t ret = 0;
     ret = avcodec_send_packet(mDecCtx->codec_ctx, NULL);
     if (ret < 0)
@@ -384,6 +393,9 @@ RenderStatus VideoDecoder::FlushDecoder(uint32_t video_id)
         {
             frame->bEOS = false;
         }
+
+        LOG(ERROR) << AVIT_LOG_TAG << "VideoDecoder::FlushDecoder . get frame eos: " << frame->bEOS << ", video_id: " << video_id << endl;
+
         LOG(INFO)<<"[FrameSequences][Decode]: Push one decoded frame at:"<<data->pts<<" video id is:"<<video_id << " and frame fifo size is " << mDecCtx->get_size_of_frame()<<endl;
         mDecCtx->push_frame(frame);
         //SAFE_DELETE(data->rwpk);
@@ -443,6 +455,7 @@ void VideoDecoder::Run()
             //flush decoder until all packets are popped.
             if (mDecCtx->get_size_of_packet() == 0 && !mIsFlushed)
             {
+                LOG(ERROR) << AVIT_LOG_TAG << "first VideoDecoder::FlushDecoder ..." << mVideoId << endl;
                 LOG(INFO)<<"Now will flush the decoder "<< mVideoId << endl;
                 ret = FlushDecoder(mVideoId);
                 if (RENDER_STATUS_OK != ret)
@@ -470,7 +483,9 @@ void VideoDecoder::Run()
         if(pkt_info->bEOS)
         {
             bool isCatchup = pkt_info->bCatchup;
-            if (pkt_info->pkt) {//catch up eos last frame
+            LOG(ERROR) << AVIT_LOG_TAG << "DecodeFrame bPacketEOS pkt_info:" << &pkt_info << " , pkt :" << pkt_info->pkt << ", mVideoId:" << mVideoId << endl;
+            if (pkt_info->pkt)
+            { // catch up eos last frame
                 LOG(INFO) << "Decoded frame is pts " << pkt_info->pts << endl;
                 ret = DecodeFrame(pkt_info->pkt, pkt_info->video_id, pkt_info->pts);
                 if(RENDER_STATUS_OK != ret){
@@ -522,6 +537,9 @@ RenderStatus VideoDecoder::GetFrame(uint64_t pts, DecodedFrame *&frame, int64_t 
         {
             frame = mDecCtx->pop_frame();
             LOG(INFO)<<"Pop one frame at:"<<pts<<" video id is:"<<mVideoId<<endl;
+
+            LOG(ERROR) << AVIT_LOG_TAG << "VideoDecoder::GetFrame 111, pop_frame: " << frame->pts << " ,eos:" << frame->bEOS << ", video_id: " << frame->video_id << endl;
+
             break;
         }
         else if (frame->pts > pts) // wait
@@ -533,13 +551,15 @@ RenderStatus VideoDecoder::GetFrame(uint64_t pts, DecodedFrame *&frame, int64_t 
         }
         // drop over time frame or drop former catch-up frames
         frame = mDecCtx->pop_frame();
-        LOG(INFO)<<"[FrameSequences][Decode]: Now will drop one frame since pts is over time! input pts is:" << pts <<" frame pts is:" << frame->pts<<"video id is:" << mVideoId<<endl;
+        LOG(ERROR) << AVIT_LOG_TAG << "VideoDecoder::GetFrame 222,  pop_frame: " << frame->pts << " ,eos:" << frame->bEOS << ", video_id: " << frame->video_id << endl;
+        LOG(ERROR) << AVIT_LOG_TAG << "[FrameSequences][Decode]: Now will drop one frame since pts is over time! input pts is:" << pts << " frame pts is:" << frame->pts << "video id is:" << mVideoId << endl;
         av_frame_free(&frame->av_frame);
         if (frame->rwpk)
             SAFE_DELETE_ARRAY(frame->rwpk->rectRegionPacking);
         SAFE_DELETE(frame->rwpk);
         SAFE_DELETE_ARRAY(frame->qtyResolution);
-        SAFE_DELETE(frame);
+        break;
+        // SAFE_DELETE(frame);
     }
 
     if( !waitFlag && (mDecCtx->get_size_of_frame() == 0) && (m_status==STATUS_PENDING) ){
@@ -587,6 +607,7 @@ RenderStatus VideoDecoder::UpdateFrame(uint64_t pts, int64_t *corr_pts, HeadPose
     uint64_t start1 = std::chrono::duration_cast<std::chrono::milliseconds>(clock.now().time_since_epoch()).count();
     DecodedFrame* frame = nullptr;
     RenderStatus ret = GetFrame(pts, frame, corr_pts);
+
     uint64_t end1 = std::chrono::duration_cast<std::chrono::milliseconds>(clock.now().time_since_epoch()).count();
     LOG(INFO)<<"GetFrame time is:"<<(end1 - start1)<<endl;
     if(NULL==frame)
@@ -594,9 +615,19 @@ RenderStatus VideoDecoder::UpdateFrame(uint64_t pts, int64_t *corr_pts, HeadPose
         LOG(INFO)<<"Frame is empty!"<<endl;
         return ret;
     }
+
+    LOG(ERROR) << AVIT_LOG_TAG << "VideoDecoder::UpdateFrame GetFrame pts: " << frame->pts << ", EOS:" << frame->bEOS << ", video_id: " << frame->video_id << endl;
+
+
     if (frame->bEOS)
     {
         this->SetEOS(true);
+    }
+
+    if (frame->pts < pts)
+    {
+        SAFE_DELETE(frame);
+        return ret;
     }
 
     BufferInfo* buf_info = new BufferInfo;
