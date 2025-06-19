@@ -3,7 +3,9 @@ package com.vcd.immersive.omafplayer;
 import android.Manifest;
 import android.Manifest.permission;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ComponentName;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -66,6 +68,7 @@ public class VideoActivity extends Activity {
      */
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        Log.i("TESTTTTT", "onCreate");
         super.onCreate(savedInstanceState);
         getApplicationContext().getExternalFilesDir("");
 
@@ -163,6 +166,7 @@ public class VideoActivity extends Activity {
      */
     @Override
     protected void onNewIntent(Intent intent) {
+        Log.i("TESTTTTT", "onNewIntent");
         // Save the new Intent which may contain a new Uri. Then tear down & recreate this Activity to
         // load that Uri.
         setIntent(intent);
@@ -216,7 +220,7 @@ public class VideoActivity extends Activity {
 
     private void SetDaultValues() {
         // default value for the first time
-        urlText.setText("http://192.168.6.241:80/LIVE4K2/Test.mpd");
+        urlText.setText("http://192.168.6.241:80/kcw/VOD4K01/Test.mpd");
         sourceTypeText.setText("0");
         extractorText.setText("false");
         cachePathText.setText("sdcard/tmp/");
@@ -352,8 +356,22 @@ public class VideoActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        Log.i("TESTTTTT", "onDestroy");
         videoView.destroy();
         super.onDestroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("您确定要退出吗？");
+        builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                System.exit(0);
+            }
+        });
+        builder.show();
     }
 
     private class InputOnClickListener implements OnClickListener {
