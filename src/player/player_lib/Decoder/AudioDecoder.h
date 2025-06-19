@@ -111,6 +111,9 @@ private:
 
      ThreadLock mFrameLock;
      std::list<AVFrame*> mFrames;
+
+     AVFrame *mCurrFrame = NULL;
+     int mCurrFrameReadByte = 0;
 };
 
 typedef struct AudioPacketInfo

@@ -67,14 +67,14 @@ bool AudioOutputer::Initialize(int32_t sample_rate, AVSampleFormat sample_fmt, i
 {
     if(!InitFilter(sample_rate, sample_fmt, channels, channel_layout) )
     {
-        ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------InitFilter failed!");
+        ANDROID_LOGD("%s InitFilter failed!", AVIT_LOG_TAG);
         LOG(ERROR) << AVIT_LOG_TAG << "InitFilter failed" << std::endl;
         return false;
     }
 
     if (!InitSDL())
     {
-        ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------InitSDL failed!");
+        ANDROID_LOGD("%s InitSDL failed!", AVIT_LOG_TAG);
         LOG(ERROR) << AVIT_LOG_TAG << "InitSDL failed" << std::endl;
         return false;
     }
@@ -395,62 +395,68 @@ void AudioOutputer::SDLAudioCallback(void *opaque, uint8_t *stream, int len)
 {
     AudioOutputer *pAudioOutputer = (AudioOutputer *)opaque;
 
-    static AVFrame *sCurrFrame = NULL;
-    static int sCurrFrameReadByte = 0;
-
     int continuousNoDataTimes = 0;
 
     int copy_size = 0;
 
     while (copy_size < len)
     {
-        if (sCurrFrame)
+        if (pAudioOutputer->mCurrFrame)
         {
+            if (!pAudioOutputer->mCurrFrame->data || !pAudioOutputer->mCurrFrame->data[0])
+            {
+                LOG(ERROR) << AVIT_LOG_TAG << "error, pAudioOutputer->mCurrFrame->data is NULL";
+                ANDROID_LOGE("%s error, pAudioOutputer->mCurrFrame->data is NULL", AVIT_LOG_TAG);
+
+                av_frame_unref(pAudioOutputer->mCurrFrame);
+                pAudioOutputer->mCurrFrame = NULL;
+                continue;
+            }
 
             continuousNoDataTimes = 0;
             
-            int data_size = av_samples_get_buffer_size(NULL, sCurrFrame->channels,
-                                                       sCurrFrame->nb_samples,
+            int data_size = av_samples_get_buffer_size(NULL, pAudioOutputer->mCurrFrame->channels,
+                                                       pAudioOutputer->mCurrFrame->nb_samples,
                                                        AV_SAMPLE_FMT_S16, 1);
 
-            int remain_bytes = data_size - sCurrFrameReadByte;
+            int remain_bytes = data_size - pAudioOutputer->mCurrFrameReadByte;
 
-            //LOG(ERROR) << AVIT_LOG_TAG << "SDL_audio_callback pts " << sCurrFrame->pts;
+            //LOG(ERROR) << AVIT_LOG_TAG << "SDL_audio_callback pts " << pAudioOutputer->mCurrFrame->pts;
 
             int buf_size = (len - copy_size);
 
             if (buf_size >= remain_bytes)
             {
-                memcpy(stream + copy_size, sCurrFrame->data[0] + sCurrFrameReadByte, remain_bytes);
-                av_frame_unref(sCurrFrame);
+                memcpy(stream + copy_size, pAudioOutputer->mCurrFrame->data[0] + pAudioOutputer->mCurrFrameReadByte, remain_bytes);
+                av_frame_unref(pAudioOutputer->mCurrFrame);
 
-                sCurrFrame = NULL;
-                sCurrFrameReadByte = 0;
+                pAudioOutputer->mCurrFrame = NULL;
+                pAudioOutputer->mCurrFrameReadByte = 0;
                 copy_size += remain_bytes;
 
                 //LOG(ERROR) << AVIT_LOG_TAG << "SDL_audio_callback copy: " << remain_bytes;
             }
             else
             {
-                memcpy(stream + copy_size, sCurrFrame->data[0] + sCurrFrameReadByte, buf_size);
-                sCurrFrameReadByte += buf_size;
+                memcpy(stream + copy_size, pAudioOutputer->mCurrFrame->data[0] + pAudioOutputer->mCurrFrameReadByte, buf_size);
+                pAudioOutputer->mCurrFrameReadByte += buf_size;
                 copy_size += buf_size;
 
                 //LOG(ERROR) << AVIT_LOG_TAG << "SDL_audio_callback copy: " << buf_size;
             }
         }
 
-        if (!sCurrFrame)
+        if (!pAudioOutputer->mCurrFrame)
         {
             //LOG(ERROR) << AVIT_LOG_TAG << "SDL_audio_callback pop_frame";
-            sCurrFrame = pAudioOutputer->PopFrame();
-            if(!sCurrFrame)
+            pAudioOutputer->mCurrFrame = pAudioOutputer->PopFrame();
+            if(!pAudioOutputer->mCurrFrame)
             {
                 ++continuousNoDataTimes;
                 LOG(ERROR) << AVIT_LOG_TAG << "no audio frame";
                 usleep(1000 * 10);
             }
-            sCurrFrameReadByte = 0;
+            pAudioOutputer->mCurrFrameReadByte = 0;
 
             if(continuousNoDataTimes > 100)
             {
@@ -486,7 +492,12 @@ AudioDecoder::AudioDecoder()
 AudioDecoder::~AudioDecoder()
 {
     m_status = STATUS_STOPPED;
-    //CloseDecoder();
+    ANDROID_LOGD("%s AudioDecoder::~AudioDecoder!", AVIT_LOG_TAG);
+    Join();
+
+    mAudioOutputer.UnInitialize();
+
+    // CloseDecoder();
     SAFE_DELETE(mDecCtx);
     if (mPkt)
     {
@@ -530,34 +541,36 @@ RenderStatus AudioDecoder::Initialize(int32_t id, Codec_Type codec, FrameHandler
 
     if (NULL == mDecCtx->decoder)
     {
-        ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------audio decoder is NULL");
+        ANDROID_LOGD("%s audio decoder is NULL", AVIT_LOG_TAG);
         LOG(ERROR) << AVIT_LOG_TAG << "audio decoder is NULL!" << std::endl;
         return RENDER_ERROR;
     }
 
     if (NULL == mDecCtx->codec_ctx)
     {
-        ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------audio decoder ctx is NULL");
+        ANDROID_LOGD("%s audio decoder ctx is NULL", AVIT_LOG_TAG);
         LOG(ERROR) << AVIT_LOG_TAG << "audio decoder ctx is NULL!" << std::endl;
         return RENDER_ERROR;
     }
 
     if (avcodec_open2(mDecCtx->codec_ctx, mDecCtx->decoder, NULL) < 0)
     {
-        ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------avcodec open failed!");
+        ANDROID_LOGD("%s avcodec open failed!", AVIT_LOG_TAG);
         LOG(ERROR) << AVIT_LOG_TAG << "avcodec open failed!" << std::endl;
         return RENDER_ERROR;
     }
 
     if( !mAudioOutputer.Initialize(mDecCtx->codec_ctx->sample_rate, mDecCtx->codec_ctx->sample_fmt, mDecCtx->codec_ctx->channels, 0))
     {
-        ANDROID_LOGD(".............xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-------------audio output init error!");
+        ANDROID_LOGD("%s audio output init error!", AVIT_LOG_TAG);
         LOG(ERROR) << AVIT_LOG_TAG << "audio output init error!" << std::endl;
         return RENDER_ERROR;
     }
 
     StartThread();
     mIsFlushed = false;
+
+    ANDROID_LOGD("%s A new audio decoder is created!", AVIT_LOG_TAG);
     LOG(INFO) << "A new audio decoder is created!" << std::endl;
 
     return RENDER_STATUS_OK;
@@ -567,6 +580,7 @@ void AudioDecoder::Run()
 {
     m_status = STATUS_RUNNING;
     RenderStatus ret = RENDER_STATUS_OK;
+    int log_count = 0;
 
     while (m_status != STATUS_STOPPED && m_status != STATUS_IDLE)
     {
@@ -587,9 +601,17 @@ void AudioDecoder::Run()
         }
         if (0 == mDecCtx->get_size_of_packet())
         {
-            usleep(1000);
+            usleep(10000);
+            if(++log_count > 150)
+            {
+                ANDROID_LOGD("%s no audio data coming!", AVIT_LOG_TAG);
+                log_count = 0;
+            }
+
             continue;
         }
+
+        log_count = 0;
         AudioPacketInfo *pkt_info = mDecCtx->pop_packet();
 
         if (NULL == pkt_info)
@@ -602,10 +624,28 @@ void AudioDecoder::Run()
         //LOG(INFO) << "Now packet pts is " << pkt_info->pts << endl;
 
         //todo
-        // if (pkt_info->bEOS)
-        // {
-        //     continue;
-        // }
+        if (pkt_info->bEOS)
+        {
+            if (pkt_info->pkt)
+            {
+                ret = DecodeFrame(pkt_info->pkt);
+                if (RENDER_STATUS_OK != ret)
+                {
+                    LOG(INFO) << "Audio eos failed to decoder one frame" << std::endl;
+                }
+
+                av_packet_free(&pkt_info->pkt);
+                SAFE_DELETE(pkt_info);
+            }
+
+            ret = FlushDecoder();
+            if (RENDER_STATUS_OK != ret)
+            {
+                LOG(INFO) << "audio eos failed to flush decoder when status is pending!" << std::endl;
+            }
+
+            continue;
+        }
 
         pkt_info->pkt->pts = pkt_info->pts;
         ret = DecodeFrame(pkt_info->pkt);
@@ -626,6 +666,8 @@ RenderStatus AudioDecoder::SendPacket(DashPacket *packet)
 {
     if (NULL == packet) return RENDER_NULL_PACKET;
 
+    ANDROID_LOGD("%s AudioDecoder::SendPacket, pts: %llu, EOS: %d, bCatchup:%d!", AVIT_LOG_TAG, packet->pts, (int)packet->bEOS, (int)packet->bCatchup);
+
     if (packet->bEOS && !packet->bCatchup) // eos
     {
         AudioPacketInfo *endPkt = new AudioPacketInfo;
@@ -633,6 +675,9 @@ RenderStatus AudioDecoder::SendPacket(DashPacket *packet)
         endPkt->bEOS = true;
         mDecCtx->push_packet(endPkt);
         mDecCtx->bPacketEOS = true;
+
+        LOG(ERROR) << AVIT_LOG_TAG << "get bPacketEOS, pkt ptr:" << &packet << endl;
+
         return RENDER_STATUS_OK;
     }
 
@@ -666,6 +711,8 @@ RenderStatus AudioDecoder::SendPacket(DashPacket *packet)
 
 RenderStatus AudioDecoder::FlushDecoder()
 {
+    ANDROID_LOGD("%s AudioDecoder::FlushDecoder!", AVIT_LOG_TAG);
+
     return DecodeFrame(NULL);
 }
 
@@ -676,7 +723,9 @@ RenderStatus AudioDecoder::DecodeFrame(AVPacket *pkt)
     //av_packet_unref(pkt);
     if (ret < 0)
     {
-        LOG(ERROR) << AVIT_LOG_TAG << "audio Send packet failed! ret: " << ret << ", size:" << pkt->size << ", data:" << (void *)(pkt->data) << endl;
+        int pkt_size = pkt ? pkt->size : 0;
+        void* pkt_data = pkt ? pkt->data : NULL;
+        LOG(ERROR) << AVIT_LOG_TAG << "audio Send packet failed! ret: " << ret << ", size:" << pkt_size << ", data:" << pkt_data << endl;
         return RENDER_DECODE_FAIL;
     }
 
