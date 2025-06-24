@@ -18,7 +18,8 @@ public class Utils {
     public static final int BYTES_PER_FLOAT = 4;
 
     /** Debug builds should fail quickly. Release versions of the app should have this disabled. */
-    private static final boolean HALT_ON_GL_ERROR = true;
+    //
+    private static final boolean HALT_ON_GL_ERROR = false;
 
     /** Class only contains static methods. */
     private Utils() {}
@@ -30,7 +31,7 @@ public class Utils {
         if (error != GLES20.GL_NO_ERROR) {
             do {
                 lastError = error;
-                Log.e(TAG, "glError " + gluErrorString(lastError));
+                Log.e(TAG, "avit log >>>>>>>> glError " + gluErrorString(lastError));
                 error = GLES20.glGetError();
             } while (error != GLES20.GL_NO_ERROR);
 
