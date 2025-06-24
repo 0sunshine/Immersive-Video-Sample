@@ -130,7 +130,22 @@ public class MediaLoader {
     /** Notifies MediaLoader that GL components have initialized. */
     public void onGlSceneReady(SceneRenderer sceneRenderer) {
         this.sceneRenderer = sceneRenderer;
-        Log.i(TAG, "Scene ready!");
+        Log.i(TAG, "avit log >>>>>>>> Scene ready!");
+        int wait_count = 50;
+        while(mediaPlayer == null && wait_count > 0)
+        {
+            --wait_count;
+            try {
+                if(mediaPlayer == null)
+                {
+                    Log.e(TAG, "avit log >>>>>>>> wait mediaPlayer!");
+                }
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
         if (mediaPlayer != null)
             this.sceneRenderer.setMediaPlayer(mediaPlayer);
         displayWhenReady();//real operate
@@ -149,17 +164,19 @@ public class MediaLoader {
 
         @Override
         protected Void doInBackground(Intent... intent) {
-
-            mediaPlayer = new NativeMediaPlayer(context);
-            Log.i(TAG, "Create native media player!");
-            int ret = mediaPlayer.Initialize();
+            NativeMediaPlayer player =  new NativeMediaPlayer(context);
+            Log.i(TAG, "avit log >>>>>>>> Create native media player!");
+            int ret = player.Initialize();
             if (ret != 0)
             {
-                Log.e(TAG, "native media player init failed!");
+                Log.e(TAG, "avit log >>>>>>>> native media player init failed!");
                 return null;
             }
 
-            displayWhenReady();
+            Log.i(TAG, "avit log >>>>>>>> native media player init ok!");
+            mediaPlayer = player;
+
+            //displayWhenReady();
             return null;
         }
 
@@ -194,7 +211,9 @@ public class MediaLoader {
             // displayWhenReady is executed.
             return;
         }
-        if (mediaPlayer == null) Log.i(TAG, "media player is null");
+        if (mediaPlayer == null) {
+            Log.i(TAG, "media player is null");
+        }
         if (sceneRenderer == null) Log.i(TAG, "scene renderer is null");
         if (mediaPlayer == null || sceneRenderer == null) {
             // Wait for everything to be initialized.
@@ -279,7 +298,17 @@ public class MediaLoader {
             }
         }else
         {
-            Log.e(TAG, "media player is invalid!");
+            if(mediaPlayer.mConfig == null)
+            {
+                Log.e(TAG, "avit log >>>>>>>> displayWhenReady, mediaPlayer.mConfig == null!");
+            }
+
+            if(!sceneRenderer.decode_surface_ready)
+            {
+                Log.e(TAG, "avit log >>>>>>>> displayWhenReady, decode_surface_ready is false");
+            }
+
+            Log.e(TAG, "avit log >>>>>>>> displayWhenReady, media player is invalid!");
         }
     }
 
@@ -347,6 +376,9 @@ public class MediaLoader {
     /** Tears down MediaLoader and prevents further work from happening. */
     @MainThread
     public synchronized void destroy() {
+
+        Log.e(TAG, "avit log >>>>>>>>  java destroy!!!");
+
         if (mediaPlayer != null) {
             mediaPlayer.Stop();
         }

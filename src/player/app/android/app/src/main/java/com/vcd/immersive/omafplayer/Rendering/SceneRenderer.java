@@ -159,7 +159,7 @@ public final class SceneRenderer {
             decodeTexture[i] = new SurfaceTexture(decodeTexId[i]);
             checkGlError();
         }
-        Log.e(TAG, "decode texture is created!");
+        Log.e(TAG, "avit log >>>>>>>> decode texture is created!");
         // When the video decodes a new frame, tell the GL thread to update the image.
         decodeTexture[0].setOnFrameAvailableListener(
                 new OnFrameAvailableListener() {
@@ -193,6 +193,8 @@ public final class SceneRenderer {
         reticle.glInit();
 
         decode_surface_ready = true;
+
+        Log.e(TAG, "avit log >>>>>>>> decode_surface_ready!");
     }
 
     /**
