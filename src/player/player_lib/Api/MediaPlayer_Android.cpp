@@ -94,6 +94,9 @@ RenderStatus MediaPlayer_Android::Start()
         LOG(ERROR) << "Wrong url" << std::endl;
         return RENDER_ERROR;
     }
+
+    setPlayAudioDelayMs(m_renderConfig.audioPlayDelay);
+
     if (RENDER_STATUS_OK != m_renderManager->Initialize(m_mediaSource, m_rsFactory, nullptr)) {
         return RENDER_ERROR;
     }

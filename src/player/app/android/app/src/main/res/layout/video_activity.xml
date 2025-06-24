@@ -698,14 +698,65 @@
         </RelativeLayout>
     </RelativeLayout>
 
+    <RelativeLayout
+        android:id="@+id/relativeLayout14"
+        android:layout_width="350dp"
+        android:layout_height="40dp"
+        android:layout_below="@+id/relativeLayout13"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="0dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true">
+
+            <TextView
+                android:id="@+id/textView_audioDelay"
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:lines="2"
+                android:padding="1dp"
+                android:text="audioDelay"
+                android:textSize="12sp" />
+
+            <View
+                android:id="@+id/view14"
+                android:layout_width="1dip"
+                android:layout_height="match_parent"
+                android:layout_centerVertical="true"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginLeft="2dp"
+                android:layout_marginRight="2dp"
+                android:layout_toRightOf="@+id/textView_audioDelay"
+                android:background="#EEEFFF" />
+
+            <EditText
+                android:id="@+id/text_audioDelay"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="2dp"
+                android:layout_toRightOf="@+id/view14"
+                android:text="0"
+                android:ems="19"
+                android:padding="1dp"
+                android:textSize="12sp">
+            </EditText>
+        </RelativeLayout>
+    </RelativeLayout>
+
     <!--login button-->
      <Button
          android:id="@+id/loginButton"
          android:layout_width="160dp"
          android:layout_height="40dp"
-         android:layout_below="@+id/relativeLayout13"
-         android:layout_alignLeft="@+id/relativeLayout13"
-         android:layout_alignRight="@+id/relativeLayout13"
+         android:layout_below="@+id/relativeLayout14"
+         android:layout_alignLeft="@+id/relativeLayout14"
+         android:layout_alignRight="@+id/relativeLayout14"
          android:layout_marginTop="35dp"
          android:padding="1dp"
          android:text="@string/ok_key"

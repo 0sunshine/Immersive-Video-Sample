@@ -82,6 +82,7 @@ public class NativeMediaPlayer {
         public int responseTimesInOneSeg;
         public int maxCatchupWidth;
         public int maxCatchupHeight;
+        public int audioDelay;
 
         public RenderConfig() {
             windowWidth = 0;
@@ -106,6 +107,7 @@ public class NativeMediaPlayer {
             responseTimesInOneSeg = 0;
             maxCatchupWidth = 0;
             maxCatchupHeight = 0;
+            audioDelay = 0;
         }
     }
 
@@ -293,6 +295,7 @@ public class NativeMediaPlayer {
             mConfig.responseTimesInOneSeg = cfgJsonObject.getInt("catchupTimes");
             mConfig.maxCatchupWidth = cfgJsonObject.getInt("maxCatchupWidth");
             mConfig.maxCatchupHeight = cfgJsonObject.getInt("maxCatchupHeight");
+            mConfig.audioDelay = cfgJsonObject.getInt("audioDelay");
             // default in file
             mConfig.windowWidth = cfgJsonObject.has("windowWidth") ? cfgJsonObject.getInt("windowWidth") : 0;
             mConfig.windowHeight = cfgJsonObject.has("windowHeight") ? cfgJsonObject.getInt("windowHeight") : 0;

@@ -164,6 +164,11 @@ Java_com_vcd_immersive_omafplayer_MediaPlayer_NativeMediaPlayer_Create(JNIEnv *e
     jfieldID maxCatchupHeightID = (env)->GetFieldID(objclass, "maxCatchupHeight", "I");
     jint maxCatchupHeight = (int)(env)->GetIntField(config, maxCatchupHeightID);
     render_config.maxCatchupHeight = enableCatchup ? maxCatchupHeight : 0;
+
+    jfieldID audioDelayID = (env)->GetFieldID(objclass, "audioDelay", "I");
+    jint audioDelay = (int)(env)->GetIntField(config, audioDelayID);
+    render_config.audioPlayDelay = audioDelay;
+
     return (jint)pPlayer->Create(render_config);
 }
 JNIEXPORT jint JNICALL

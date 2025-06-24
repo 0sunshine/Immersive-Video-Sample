@@ -83,4 +83,7 @@ static uint64_t transferNtpToMSecond(uint64_t last_ntp_time) {
     return base_time;
 }
 
+int32_t getPlayAudioDelayMs();
+void setPlayAudioDelayMs(int32_t ms);
+
 #endif /* _COMMON_H_ */

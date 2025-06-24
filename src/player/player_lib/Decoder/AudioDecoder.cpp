@@ -34,7 +34,7 @@
 
 VCD_NS_BEGIN
 
-//目前没使用
+//Ŀǰûʹ��
 typedef struct AudioParams
 {
     int freq;
@@ -122,6 +122,26 @@ AVFrame* AudioOutputer::PopFrame()
     if (mFrames.empty())
     {
         return NULL;
+    }
+
+    if(!mPopFrameTime)
+    {
+        std::chrono::high_resolution_clock clock;
+        mPopFrameTime = std::chrono::duration_cast<std::chrono::milliseconds>(clock.now().time_since_epoch()).count();
+    }
+
+    if (!mHasDalayed)
+    {
+        std::chrono::high_resolution_clock clock;
+        uint64_t curr = std::chrono::duration_cast<std::chrono::milliseconds>(clock.now().time_since_epoch()).count();
+        int32_t audioDelayMs = getPlayAudioDelayMs();
+
+        if (curr - mPopFrameTime < audioDelayMs)
+        {
+            return NULL;
+        }
+
+        mHasDalayed = 1;
     }
 
     AVFrame* frame = mFrames.front();

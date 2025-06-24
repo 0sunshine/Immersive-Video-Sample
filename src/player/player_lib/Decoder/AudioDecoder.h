@@ -114,6 +114,9 @@ private:
 
      AVFrame *mCurrFrame = NULL;
      int mCurrFrameReadByte = 0;
+
+     uint64_t mPopFrameTime = 0;
+     int      mHasDalayed = 0;
 };
 
 typedef struct AudioPacketInfo

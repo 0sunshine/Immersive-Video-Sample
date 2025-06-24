@@ -165,6 +165,8 @@ struct RenderConfig {
   // for multi view mode
   bool enableAutoView;
   // ...
+
+  int32_t audioPlayDelay;
 };
 
 typedef struct TileInformation{

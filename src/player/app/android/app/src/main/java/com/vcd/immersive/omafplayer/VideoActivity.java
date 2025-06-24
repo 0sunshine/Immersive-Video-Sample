@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 import com.google.vr.ndk.base.DaydreamApi;
@@ -57,6 +58,8 @@ public class VideoActivity extends Activity {
     private TextView catchupTimesText;
     private TextView catchupMaxWidthText;
     private TextView catchupMaxHeightText;
+    private TextView audioDelayText;
+
     private boolean isInputConfigFinished = false;
     private boolean isPermissionRequired = false;
 
@@ -73,6 +76,9 @@ public class VideoActivity extends Activity {
         getApplicationContext().getExternalFilesDir("");
 
         setContentView(R.layout.video_activity);
+
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         // Configure the MonoscopicView which will render the video and UI.
         videoView = (MonoscopicView) findViewById(R.id.video_view);
@@ -166,7 +172,6 @@ public class VideoActivity extends Activity {
      */
     @Override
     protected void onNewIntent(Intent intent) {
-        Log.i("TESTTTTT", "onNewIntent");
         // Save the new Intent which may contain a new Uri. Then tear down & recreate this Activity to
         // load that Uri.
         setIntent(intent);
@@ -194,6 +199,7 @@ public class VideoActivity extends Activity {
         findViewById(R.id.relativeLayout11).setVisibility(View.GONE);
         findViewById(R.id.relativeLayout12).setVisibility(View.GONE);
         findViewById(R.id.relativeLayout13).setVisibility(View.GONE);
+        findViewById(R.id.relativeLayout14).setVisibility(View.GONE);
         findViewById(R.id.loginButton).setVisibility(View.GONE);
         videoView.loadMedia(getIntent());
     }
@@ -212,6 +218,7 @@ public class VideoActivity extends Activity {
         catchupTimesText     = findViewById(R.id.text_catchupTimes);
         catchupMaxWidthText  = findViewById(R.id.text_maxCatchupWidth);
         catchupMaxHeightText = findViewById(R.id.text_maxCatchupHeight);
+        audioDelayText = findViewById(R.id.text_audioDelay);
 
         Button btn     = findViewById(R.id.loginButton);
         SetDefaultValueFromCfgFile();
@@ -233,6 +240,7 @@ public class VideoActivity extends Activity {
         catchupTimesText.setText("1");
         catchupMaxWidthText.setText("3200");
         catchupMaxHeightText.setText("3200");
+        audioDelayText.setText("0");
     }
 
     //read from cfg file on create
@@ -286,6 +294,7 @@ public class VideoActivity extends Activity {
             catchupTimesText.setText(cfgJsonObject.getInt("catchupTimes") + "");
             catchupMaxWidthText.setText(cfgJsonObject.getInt("maxCatchupWidth") + "");
             catchupMaxHeightText.setText(cfgJsonObject.getInt("maxCatchupHeight") + "");
+            audioDelayText.setText(cfgJsonObject.getInt("audioDelay") + "");
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -319,6 +328,7 @@ public class VideoActivity extends Activity {
             inputObj.put("catchupTimes", catchupTimesText.getText().toString());
             inputObj.put("maxCatchupWidth", catchupMaxWidthText.getText().toString());
             inputObj.put("maxCatchupHeight", catchupMaxHeightText.getText().toString());
+            inputObj.put("audioDelay", audioDelayText.getText().toString());
 
             // fill in default values at the first time
             if (!inputObj.has("windowWidth")) inputObj.put("windowWidth", 960);

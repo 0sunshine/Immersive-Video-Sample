@@ -11,6 +11,7 @@
     "cachePath": "sdcard/Android/data/tmp/",
     "maxVideoDecodeWidth": 4096,
     "maxVideoDecodeHeight": 2304,
+    "audioDelay": 0,
     "predict": {
         "enable": false,
         "name": "",
