@@ -1,0 +1,7 @@
+/home/lzw/Immersive-Video-Sample-1.12.0/src/plugins/StreamProcess_Plugin/AudioStream_Plugin/CMakeFiles/AACAudioStreamProcess.dir
+/home/lzw/Immersive-Video-Sample-1.12.0/src/plugins/StreamProcess_Plugin/AudioStream_Plugin/CMakeFiles/edit_cache.dir
+/home/lzw/Immersive-Video-Sample-1.12.0/src/plugins/StreamProcess_Plugin/AudioStream_Plugin/CMakeFiles/rebuild_cache.dir
+/home/lzw/Immersive-Video-Sample-1.12.0/src/plugins/StreamProcess_Plugin/AudioStream_Plugin/CMakeFiles/list_install_components.dir
+/home/lzw/Immersive-Video-Sample-1.12.0/src/plugins/StreamProcess_Plugin/AudioStream_Plugin/CMakeFiles/install.dir
+/home/lzw/Immersive-Video-Sample-1.12.0/src/plugins/StreamProcess_Plugin/AudioStream_Plugin/CMakeFiles/install/local.dir
+/home/lzw/Immersive-Video-Sample-1.12.0/src/plugins/StreamProcess_Plugin/AudioStream_Plugin/CMakeFiles/install/strip.dir
